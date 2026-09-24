@@ -1,0 +1,43 @@
+services:
+  # POSTGRES
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres_fdelivery
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    
+    volumes:
+      - ./out/pg_data:/var/lib/postgresql/data
+      - ./postgres/init/:/docker-entrypoint
+    
+    networks:
+      - fdelivery_net
+
+    ports:
+      - "5432:5342"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:3.7.13
+    container_name: traefik_fdelivery
+    security
+
+
+
+volumes:
+  pg_data:
+
+networks:
+  fdelivery_net:
+    driver: bridge
