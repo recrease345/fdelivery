@@ -10,17 +10,17 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     
     volumes:
-      - ./out/pg_data:/var/lib/postgresql/data
-      - ./postgres/init/:/docker-entrypoint
+      - pg_data:/var/lib/postgresql/data
+      - ./postgres/init/:/docker-entrypoint-initdb.d/
     
     networks:
       - fdelivery_net
 
     ports:
-      - "5432:5342"
+      - "5432:5432"
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 8s
       timeout: 5s
       retries: 5
@@ -28,15 +28,322 @@ services:
 
     restart: unless-stopped
 
+  # TRAEFIK
   traefik:
     image: traefik:3.7.13
     container_name: traefik_fdelivery
-    security
+    security_opt:
+      - no-new-privileges:true
+
+    volumes:
+      - /etc/localtime:/etc/localtime:ro # синхронизация времени
+      - /var/run/docker.sock:/var/run/docker.sock:ro # разрешение на взаимодействие с докером
+      - ./traefik/traefik.yaml:/traefik.yaml:ro # кфг траефика
+      - ./traefik/acme.json:/acme.json # данные сертификатов
+      - ./traefik/config.yaml:/config.yaml:ro # динамический кфг
+      - ./traefik/logs:/var/log/traefik # логи траефик и access
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http" # точка входа хттп
+      - "traefik.http.routers.traefik.rule=Host('traefik-dashboard.user.ru')" # host rule
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_USER}:${TRAEFIK_PASSWORD}" # auth траефика
+      #- "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https" # редирект на https 
+      #- "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https" # переадресация заголовков для ссл    
+      - "traefik.http.routers.traefik-secure.service=api@internal" # внутренний сервис траефик апи
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.rule=Host('traefik-dashboard.user.ru')"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
 
 
+    networks:
+      - fdelivery_net
+    
+    restart: unless-stopped
+
+    ports:
+      - 80:80
+      - 443:443
+
+    command: --ping=true
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 7s
+
+  # МНОГО КАФОК контроллеры и брокер
+  #______________________________________
+  # ПЯТИНОДОВАЯ КАФКА, пока не надо
+  #kafka-broker-1:
+  #  image: apache/kafka:4.3.1
+  #  container_name: kafkabroker_fdelivery_1
+  #  hostname: kafkabroker_fdelivery_1
+  #  environment:
+  #    KAFKA_CLUSTER_ID: "F2jfd8An7fJ894mF9f"
+  #    KAFKA_NODE_ID: 1
+  #    KAFKA_PROCESS_ROLES: "broker"
+  #    KAFKA_LISTENERS:  PLAINTEXT://:9092
+  #    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+  #    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  #    KAFKA_CONTROLLER_QUORUM_VOTERS: "3@kafkacontroller_fdelivery_1:9093,4@kafkacontroller_fdelivery_2:9093,5@kafkacontroller_fdelivery_3:9093"
+  #    KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafkabroker_fdelivery_1:9092'
+  #    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+  #    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+  #    KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+  #    KAFKA_MIN_INSYNC_REPLICAS: 1
+  #  
+  #  volumes:
+  #    - ./out/kafka_brkr1_data:/var/lib/kafka
+  #  depends_on:
+  #    kafka-controller-1:
+  #     condition: service_healthy
+  #    kafka-controller-2:
+  #      condition: service_healthy
+  #    kafka-controller-3:
+  #      condition: service_healthy
+  #
+  #  networks:
+  #    - fdelivery_net
+  #
+  #  healthcheck:
+  #    test: ["CMD", "sh", "-c", "kafka-topics --bootstrap-server localhost:9092 --list > /dev/null"]
+  #    interval: 10s
+  #    timeout: 10s
+  #    retries: 5
+  #   start_period: 60s
+  #
+  #  restart: unless-stopped
+
+
+  #broker 2
+  #kafka-broker-2:
+  #  image: apache/kafka:4.3.1
+  #  container_name: kafkabroker_fdelivery_2
+  #  hostname: kafkabroker_fdelivery_2
+  #  environment:
+  #    KAFKA_CLUSTER_ID: "F2jfd8An7fJ894mF9f"
+  #    KAFKA_NODE_ID: 2
+  #    KAFKA_PROCESS_ROLES: "broker"
+  #    KAFKA_LISTENERS:  PLAINTEXT://:9092
+  #    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+  #    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  #    KAFKA_CONTROLLER_QUORUM_VOTERS: "3@kafkacontroller_fdelivery_1:9093,4@kafkacontroller_fdelivery_2:9093,5@kafkacontroller_fdelivery_3:9093"
+  #    KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafkabroker_fdelivery_2:9092'
+  #    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+  #    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 2
+  #    KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+  #    KAFKA_MIN_INSYNC_REPLICAS: 1
+  #  
+  #  volumes:
+  #    - ./out/kafka_brkr2_data:/var/lib/kafka
+  #  depends_on:
+  #    kafka-controller-1:
+  #      condition: service_healthy
+  #    kafka-controller-2:
+  #      condition: service_healthy
+  #    kafka-controller-3:
+  #      condition: service_healthy
+  #
+  #  networks:
+  #    - fdelivery_net
+  #
+  #  healthcheck:
+  #    test: ["CMD", "sh", "-c", "kafka-topics --bootstrap-server localhost:9092 --list > /dev/null"]
+  #    interval: 10s
+  #    timeout: 10s
+  #    retries: 5
+  #    start_period: 60s
+
+  #  restart: unless-stopped
+
+  # ctrl1
+  #kafka-controller-1:
+  #  image: apache/kafka:4.3.1
+  #  container_name: kafkacontroller_fdelivery_1
+  #  hostname: kafkacontroller_fdelivery_1
+  #  environment:
+  #    KAFKA_CLUSTER_ID: "F2jfd8An7fJ894mF9f"
+  #    KAFKA_NODE_ID: 3
+  #    KAFKA_PROCESS_ROLES: controller
+  #    KAFKA_LISTENERS: 'CONTROLLER://:9093'
+  #   KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+  #    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #    KAFKA_CONTROLLER_QUORUM_VOTERS: "3@kafkacontroller_fdelivery_1:9093,4@kafkacontroller_fdelivery_2:9093,5@kafkacontroller_fdelivery_3:9093"
+
+  #  volumes:
+  #    - ./out/kafka_ctrl1_data:/var/lib/kafka
+  #  networks:
+  #    - fdelivery_net
+    
+  #  healthcheck:
+  #    test: ["CMD", "sh", "-c", "kafka-metadata-quorum --bootstrap-server localhost:9093 --list > /dev/null 2>&1 || exit 1"]
+  #    interval: 10s
+  #    timeout: 7s
+  #    retries: 5
+  #    start_period: 15s
+  #
+  #  restart: unless-stopped
+
+  #ctrl2
+  #kafka-controller-2:
+  #  image: apache/kafka:4.3.1
+  #  container_name: kafkacontroller_fdelivery_2
+  #  hostname: kafkacontroller_fdelivery_2
+  #  environment:
+  #    KAFKA_CLUSTER_ID: "F2jfd8An7fJ894mF9f"
+  #    KAFKA_NODE_ID: 4
+  #    KAFKA_PROCESS_ROLES: controller
+  #    KAFKA_LISTENERS: 'CONTROLLER://:9093'
+  #    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+  #    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #    KAFKA_CONTROLLER_QUORUM_VOTERS: "3@kafkacontroller_fdelivery_1:9093,4@kafkacontroller_fdelivery_2:9093,5@kafkacontroller_fdelivery_3:9093"
+
+  #  volumes:
+  #    - ./out/kafka_ctrl2_data:/var/lib/kafka
+  #  networks:
+  #    - fdelivery_net
+    
+  #  healthcheck:
+  #    test: ["CMD", "sh", "-c", "kafka-metadata-quorum --bootstrap-server localhost:9093 --list > /dev/null 2>&1 || exit 1"]
+  #    interval: 10s
+  #    timeout: 7s
+  #    retries: 5
+  #    start_period: 15s
+
+  #  restart: unless-stopped
+  
+  #ctrl3
+  #kafka-controller-3:
+  #  image: apache/kafka:4.3.1
+  #  container_name: kafkacontroller_fdelivery_3
+  #  hostname: kafkacontroller_fdelivery_3
+  #  environment:
+  #    KAFKA_CLUSTER_ID: "F2jfd8An7fJ894mF9f"
+  #    KAFKA_NODE_ID: 5
+  #    KAFKA_PROCESS_ROLES: controller
+  #    KAFKA_LISTENERS: 'CONTROLLER://:9093'
+  #    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+  #    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #    KAFKA_CONTROLLER_QUORUM_VOTERS: "3@kafkacontroller_fdelivery_1:9093,4@kafkacontroller_fdelivery_2:9093,5@kafkacontroller_fdelivery_3:9093"
+
+  #  volumes:
+  #    - ./out/kafka_ctrl3_data:/var/lib/kafka
+  #  networks:
+  #    - fdelivery_net
+    
+  #  healthcheck:
+  #    test: ["CMD", "sh", "-c", "kafka-metadata-quorum --bootstrap-server localhost:9093 --list > /dev/null 2>&1 || exit 1"]
+  #    interval: 10s
+  #    timeout: 7s
+  #    retries: 5
+  #    start_period: 15s
+
+  #  restart: unless-stopped
+
+  #____________________________________
+
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: kafka_fdelivery
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+
+    volumes:
+      - kafka_data:/var/lib/kafka
+
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+    - fdelivery_net
+
+    restart: unless-stopped
+
+  temporal:
+    container_name: temporal_fdelivery
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB=${TEMPORAL_DB}
+      - DB_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PASSWORD}
+      - POSTGRES_SEEDS=postgres
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS}
+      - TEMPORAL_CLI_ADDRESS=temporal:${TEMPORAL_CLI_ADDRESS}
+    image: temporalio/auto-setup:1.23
+    networks:
+      - fdelivery_net
+    ports:
+      - 7233:7233
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
+    
+  temporal-ui:
+    container_name: temporal_ui_fdelivery
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    image: temporalio/ui:2.54.1
+    networks:
+      - fdelivery_net
+    ports:
+      - 8080:8080
+
+    healthcheck:
+      test: ["CMD-SHELL", "tctl --address localhost:7233 cluster health | grep -q SERVING"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  #orders:
+  #  build:
+  #    context: .
+  #    dockerfile: Dockerfile
+  #   args:
+  #      SERVICE_NAME: orders
+  #  container_name: orders_fdelivery
+  #  networks:
+  #    - fdelivery_net
+  #  ports:
+  #    - "8081:8081"
+  #  depends_on:
+  #   postgres:
+  #      condition: service_healthy
+  #  restart: unless-stopped  
 
 volumes:
+  kafka_data:
   pg_data:
+
 
 networks:
   fdelivery_net:
