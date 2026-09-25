@@ -39,8 +39,7 @@ services:
       - /etc/localtime:/etc/localtime:ro # синхронизация времени
       - /var/run/docker.sock:/var/run/docker.sock:ro # разрешение на взаимодействие с докером
       - ./traefik/traefik.yaml:/traefik.yaml:ro # кфг траефика
-      - ./traefik/acme.json:/acme.json # данные сертификатов
-      - ./traefik/config.yaml:/config.yaml:ro # динамический кфг
+      #- ./traefik/acme.json:/acme.json # данные сертификатов
       - ./traefik/logs:/var/log/traefik # логи траефик и access
 
     labels:
@@ -51,11 +50,11 @@ services:
       #- "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https" # редирект на https 
       #- "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https" # переадресация заголовков для ссл    
       - "traefik.http.routers.traefik-secure.service=api@internal" # внутренний сервис траефик апи
-      - "traefik.http.routers.traefik-secure.tls=true"
-      - "traefik.http.routers.traefik-secure.rule=Host('traefik-dashboard.user.ru')"
-      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      #- "traefik.http.routers.traefik-secure.tls=true"
+      #- "traefik.http.routers.traefik-secure.rule=Host('traefik-dashboard.user.ru')"
+      #- "traefik.http.routers.traefik-secure.entrypoints=https"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
-      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      #- "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
 
 
     networks:
@@ -94,7 +93,7 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
     volumes:
-      - kafka_data:/var/lib/kafka
+      - kafka_data:/tmp/kraft-combined-logs
 
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null"]

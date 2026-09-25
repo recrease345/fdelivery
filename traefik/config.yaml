@@ -1,0 +1,6 @@
+http:
+  services:
+    proxmox:
+      loadBalancer:
+        servers:
+          - url: ""
