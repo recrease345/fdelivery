@@ -1,0 +1,7 @@
+.gitignore
+*.md
+README*
+LICENSE
+*.log
+tmp/
+build/

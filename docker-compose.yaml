@@ -45,7 +45,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=http" # точка входа хттп
-      - "traefik.http.routers.traefik.rule=Host('traefik-dashboard.user.ru')" # host rule
+      - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.user.ru`)" # host rule
       - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$2a$$08$$V.Sx5T2/Bc19iXvPxBmU3.4kCSYZATmZRgD4z7yJPf3aNCHgljioO" # auth траефика
       #- "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https" # редирект на https 
       #- "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https" # переадресация заголовков для ссл    
@@ -162,21 +162,35 @@ services:
 
     restart: unless-stopped
 
-  #orders:
-  #  build:
-  #    context: .
-  #    dockerfile: Dockerfile
-  #   args:
-  #      SERVICE_NAME: orders
-  #  container_name: orders_fdelivery
-  #  networks:
-  #    - fdelivery_net
-  #  ports:
-  #    - "8081:8081"
-  #  depends_on:
-  #   postgres:
-  #      condition: service_healthy
-  #  restart: unless-stopped  
+  orders:
+    build:
+      context: ./orders
+      dockerfile: Dockerfile
+    networks:
+      - fdelivery_net
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped  
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.orders-router.rule=PathPrefix(`/orders`)"
+      - "traefik.http.routers.orders-router.entrypoints=http"
+      - "traefik.http.routers.orders-router.middlewares=orders-strip-prefix"
+      - "traefik.http.routers.orders-router.service=orders-service"
+      - "traefik.http.middlewares.orders-strip-prefix.stripprefix.prefixes=/orders"
+      - "traefik.http.services.orders-service.loadbalancer.server.port=8081"
+
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8081"]
+      interval: 5s
+      timeout: 4s
+      retries: 5
+      start_period: 30s
+
 
 volumes:
   kafka_data:

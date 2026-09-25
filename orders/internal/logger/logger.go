@@ -1,3 +1,5 @@
+// временно пока go.work не сделан
+
 package logger
 
 import (
