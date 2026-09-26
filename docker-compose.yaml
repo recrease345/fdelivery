@@ -170,6 +170,9 @@ services:
       - fdelivery_net
     ports:
       - "8081:8081"
+
+    environment: 
+      LOG_LEVEL: ${LOG_LEVEL}
     depends_on:
       postgres:
         condition: service_healthy
