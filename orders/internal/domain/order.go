@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,8 +22,8 @@ const (
 )
 
 var (
-	ErrInvalidUserID = errors.New("order: userID is nil")
-	ErrInvalidItems = errors.New("order: items mustnt be empty")
+	ErrInvalidUserID       = errors.New("order: userID is nil")
+	ErrInvalidItems        = errors.New("order: items mustnt be empty")
 	ErrInvalidRestaurantID = errors.New("order: restaurantID is nil")
 )
 
@@ -51,10 +50,10 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []uuid.UUID, statu
 	}
 
 	return &Order{
-		ID: uuid.New(),
-		UserID: userID,
+		ID:           uuid.New(),
+		UserID:       userID,
 		RestaurantID: restaurantID,
-		Items: items,
-		Status: status,
+		Items:        items,
+		Status:       status,
 	}, nil
 }

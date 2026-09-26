@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fdelivery_orders/internal/logger"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,17 +17,28 @@ import (
 type pool struct{}
 
 func (pool) PingContext(ctx context.Context) error { return nil }
-
 func main() {
-	_ = godotenv.Load("orders/.env")
-	log := logger.New()
 	var pool pool
+
+	_ = godotenv.Load(".env")
+
+	// логгер
+	slog, err := logger.New()
+	if err != nil {
+		log.Fatalf("failed to initialize logger: %v", err)
+		os.Exit(1)
+	}
+
+	_ = slog // заглушка на время
+
+	// маршрутизация
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
 		defer cancel()
-		if err := pool.PingContext(ctx); err != nil {
+
+		if err := pool.PingContext(ctx); err != nil { // потом над поменять на реальный пул!!!
 			w.WriteHeader(503)
 			return
 		}
@@ -53,7 +65,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error("server error", "error", err)
 		}
 	}()
