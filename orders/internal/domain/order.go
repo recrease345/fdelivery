@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,22 +22,39 @@ const (
 	Canceled   Status = "canceled"
 )
 
+type Item struct {
+	DishID   uuid.UUID
+	Name     string
+	Price    int64
+	Quantity int
+}
+
 var (
 	ErrInvalidUserID       = errors.New("order: userID is nil")
 	ErrInvalidItems        = errors.New("order: items mustnt be empty")
 	ErrInvalidRestaurantID = errors.New("order: restaurantID is nil")
+	ErrInvalidTotalPrice   = errors.New("order: total mismatch")
 )
+
+type InvalidTransitionError struct {
+	From, To Status
+}
+
+func (e *InvalidTransitionError) Error() string {
+	return fmt.Sprintf("order: invalid transition %s -> %s", e.From, e.To)
+}
 
 type Order struct {
 	ID           uuid.UUID
 	UserID       uuid.UUID
 	RestaurantID uuid.UUID
-	Items        []uuid.UUID
+	Items        []Item
+	TotalPrice   int64
 	Status       Status
-	CreatedAt    *time.Time
+	CreatedAt    time.Time
 }
 
-func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []uuid.UUID, status Status) (*Order, error) {
+func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, totalPrice int64) (*Order, error) {
 	if userID == uuid.Nil {
 		return nil, ErrInvalidUserID
 	}
@@ -49,11 +67,21 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []uuid.UUID, statu
 		return nil, ErrInvalidItems
 	}
 
+	var totalItemsPrice int64
+	for _, item := range items {
+		totalItemsPrice += item.Price
+	}
+
+	if totalItemsPrice != totalPrice {
+		return nil, ErrInvalidTotalPrice
+	}
+
 	return &Order{
 		ID:           uuid.New(),
 		UserID:       userID,
 		RestaurantID: restaurantID,
 		Items:        items,
-		Status:       status,
+		Status:       Created,
+		CreatedAt:    time.Now(),
 	}, nil
 }

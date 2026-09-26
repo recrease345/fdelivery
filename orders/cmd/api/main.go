@@ -29,8 +29,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	_ = slog // заглушка на время
-
 	// маршрутизация
 	mux := http.NewServeMux()
 
@@ -66,7 +64,7 @@ func main() {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error("server error", "error", err)
+			slog.Error("server error", "error", err)
 		}
 	}()
 
@@ -77,8 +75,8 @@ func main() {
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Error("Server stopped forcibly", "error", err)
+		slog.Error("Server stopped forcibly", "error", err)
 	}
 
-	log.Info("Server stopped")
+	slog.Info("Server stopped")
 }
