@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type pool struct{}
@@ -16,6 +18,7 @@ type pool struct{}
 func (pool) PingContext(ctx context.Context) error { return nil }
 
 func main() {
+	_ = godotenv.Load("orders/.env")
 	log := logger.New()
 	var pool pool
 	mux := http.NewServeMux()
