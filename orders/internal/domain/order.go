@@ -23,10 +23,10 @@ const (
 )
 
 type Item struct {
-	DishID   uuid.UUID
-	Name     string
-	Price    int64
-	Quantity int
+	DishID    uuid.UUID
+	Name      string
+	UnitPrice int64
+	Quantity  int
 }
 
 var (
@@ -69,7 +69,8 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, totalPrice
 
 	var totalItemsPrice int64
 	for _, item := range items {
-		totalItemsPrice += item.Price
+		// Name != "" {} // сделать валидацию айтема
+		totalItemsPrice += (item.UnitPrice * int64(item.Quantity))
 	}
 
 	if totalItemsPrice != totalPrice {

@@ -9,17 +9,10 @@ import (
 	"os"
 )
 
-const (
-	LevelDebug = -4
-	LevelInfo  = 0
-	LevelWarn  = 4
-	LevelError = 8
-)
-
 func New() (*slog.Logger, error) {
 	logLevel, err := getLogLevel()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %w", err)
+		return nil, fmt.Errorf("2failed to initialize logger: %w", err)
 	}
 
 	options := slog.HandlerOptions{
@@ -38,7 +31,7 @@ func New() (*slog.Logger, error) {
 func getLogLevel() (slog.Level, error) {
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
-		return 0, fmt.Errorf("LOG_LEVEL is empty")
+		return slog.LevelInfo, nil
 	}
 
 	levels := make(map[string]slog.Level)

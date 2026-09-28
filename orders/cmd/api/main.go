@@ -20,10 +20,10 @@ func (pool) PingContext(ctx context.Context) error { return nil }
 func main() {
 	var pool pool
 
-	_ = godotenv.Load(".env")
+	_ = godotenv.Load("orders/.env")
 
 	// логгер
-	slog, err := logger.New()
+	logger, err := logger.New()
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
 		os.Exit(1)
@@ -64,7 +64,7 @@ func main() {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server error", "error", err)
+			logger.Error("server error", "error", err)
 		}
 	}()
 
@@ -75,8 +75,8 @@ func main() {
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		slog.Error("Server stopped forcibly", "error", err)
+		logger.Error("Server stopped forcibly", "error", err)
 	}
 
-	slog.Info("Server stopped")
+	logger.Info("Server stopped")
 }
