@@ -1,7 +1,5 @@
 package logger
 
-// временно пока go.work не сделан
-
 import (
 	"errors"
 	"fmt"
@@ -12,7 +10,7 @@ import (
 func New() (*slog.Logger, error) {
 	logLevel, err := getLogLevel()
 	if err != nil {
-		return nil, fmt.Errorf("2failed to initialize logger: %w", err)
+		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
 	options := slog.HandlerOptions{
@@ -40,15 +38,9 @@ func getLogLevel() (slog.Level, error) {
 	levels["warn"] = slog.LevelWarn
 	levels["error"] = slog.LevelError
 
-	logLevelCorrect := false
-	for k := range levels {
-		if logLevel == k {
-			logLevelCorrect = true
-		}
-	}
-
-	if logLevelCorrect {
-		return levels[logLevel], nil
+	lvl, ok := levels[logLevel]
+	if ok {
+		return lvl, nil
 	}
 
 	return 0, fmt.Errorf("invalid LOG_LEVEL value: %w", errors.New(logLevel))

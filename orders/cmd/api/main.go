@@ -10,8 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 type pool struct{}
@@ -20,13 +18,10 @@ func (pool) PingContext(ctx context.Context) error { return nil }
 func main() {
 	var pool pool
 
-	_ = godotenv.Load("orders/.env")
-
 	// логгер
-	logger, err := logger.New()
+	slogger, err := logger.New()
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
-		os.Exit(1)
 	}
 
 	// маршрутизация
@@ -64,7 +59,7 @@ func main() {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server error", "error", err)
+			slogger.Error("server error", "error", err)
 		}
 	}()
 
@@ -75,8 +70,8 @@ func main() {
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("Server stopped forcibly", "error", err)
+		slogger.Error("Server stopped forcibly", "error", err)
 	}
 
-	logger.Info("Server stopped")
+	slogger.Info("Server stopped")
 }
