@@ -71,3 +71,11 @@ func (order *Order) TransitionTo(to Status) *InvalidTransitionError {
 		To:   to,
 	}
 }
+
+func CompensationFor(s Status) Compensation {
+	if _, ok := compensations[s]; !ok {
+		return CompUnset
+	}
+
+	return compensations[s]
+}
