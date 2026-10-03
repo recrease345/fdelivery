@@ -2,6 +2,7 @@ package order
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,6 +28,7 @@ type Order struct {
 	UserID          uuid.UUID
 	RestaurantID    uuid.UUID
 	Items           []Item
+	TotalPrice      int64
 	Status          Status
 	DeliveryAddress string
 	CreatedAt       time.Time
@@ -62,7 +64,8 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, deliveryAd
 		ID:              uuid.New(),
 		UserID:          userID,
 		RestaurantID:    restaurantID,
-		Items:           items,
+		Items:           slices.Clone(items),
+		TotalPrice:      totalPrice,
 		Status:          Created,
 		DeliveryAddress: deliveryAddress,
 		CreatedAt:       now,

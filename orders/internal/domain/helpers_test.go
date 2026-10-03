@@ -29,21 +29,11 @@ func anotherItem() order.Item {
 	}
 }
 
-func totalOf(items []order.Item) int64 {
-	var sum int64
-	for _, item := range items {
-		sum += item.UnitPrice * int64(item.Quantity)
-	}
-
-	return sum
-}
-
 // изначально валидна, потом по одному полю ломается
 type fixture struct {
 	userID          uuid.UUID
 	restaurantID    uuid.UUID
 	items           []order.Item
-	totalPrice      int64
 	deliveryAddress string
 	now             time.Time
 }
@@ -55,7 +45,6 @@ func validFixture() fixture {
 		userID:          uuid.New(),
 		restaurantID:    uuid.New(),
 		items:           items,
-		totalPrice:      totalOf(items),
 		deliveryAddress: "Улица Пушкина Дом колотушкина",
 		now:             fixedNow,
 	}
