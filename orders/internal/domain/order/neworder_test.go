@@ -1,7 +1,7 @@
 package order_test
 
 import (
-	order "fdelivery_orders/internal/domain"
+	order "fdelivery_orders/internal/domain/order"
 	"testing"
 
 	"github.com/google/uuid"
@@ -22,11 +22,9 @@ func TestNewOrderSuccess(t *testing.T) {
 	assert.Equal(t, f.restaurantID, got.RestaurantID)
 	assert.Equal(t, f.items, got.Items)
 	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress)
-	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress)
-	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress)
 	assert.Equal(t, f.now, got.CreatedAt)
 	assert.Equal(t, order.Created, got.Status)
-	assert.Equal(t, uuid.Nil, got.ID)
+	assert.NotEqual(t, uuid.Nil, got.ID)
 }
 
 func TestNewOrderValidation(t *testing.T) {
@@ -38,9 +36,9 @@ func TestNewOrderValidation(t *testing.T) {
 		wantErr error
 	}{
 		{"nil user id", func(f *fixture) { f.userID = uuid.Nil }, order.ErrInvalidUserID},
-		{"nil restaraunt id", func(f *fixture) { f.restaurantID = uuid.Nil }, order.ErrInvalidRestaurantID},
+		{"nil restaurant id", func(f *fixture) { f.restaurantID = uuid.Nil }, order.ErrInvalidRestaurantID},
 		{"nil items", func(f *fixture) { f.items = nil }, order.ErrInvalidItems},
-		{"empty  items", func(f *fixture) { f.items = []order.Item{} }, order.ErrInvalidItems},
+		{"empty items", func(f *fixture) { f.items = []order.Item{} }, order.ErrInvalidItems},
 		{"empty delivery address", func(f *fixture) { f.deliveryAddress = "" }, order.ErrInvalidDeliveryAddress},
 		{"item empty name", func(f *fixture) { f.items[0].Name = "" }, order.ErrInvalidItemsAttributes},
 		{"item nil dish id", func(f *fixture) { f.items[0].DishID = uuid.Nil }, order.ErrInvalidItemsAttributes},
@@ -61,7 +59,7 @@ func TestNewOrderValidation(t *testing.T) {
 			got, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
 
 			require.ErrorIs(t, err, tt.wantErr)
-			assert.Nil(t, got, "constructor returned nil")
+			assert.Nil(t, got, "on validation error constructor must return nil")
 		})
 	}
 }
@@ -74,7 +72,8 @@ func TestNewOrderItemsAreDefensiveCopy(t *testing.T) {
 	o, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
 	require.NoError(t, err)
 
+	want := f.items[0].Quantity
 	f.items[0].Quantity = -100
 
-	assert.Equal(t, 2, o.Items[0].Quantity, "mutation of the callers slice should not change it")
+	assert.Equal(t, want, o.Items[0].Quantity, "mutation of the callers slice should not change it")
 }

@@ -1,7 +1,7 @@
 package order_test
 
 import (
-	order "fdelivery_orders/internal/domain"
+	order "fdelivery_orders/internal/domain/order"
 	"testing"
 	"time"
 
@@ -54,17 +54,17 @@ func newOrder(t testing.TB) *order.Order {
 	t.Helper()
 
 	f := validFixture()
-	order, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, f.now)
+	o, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, f.now)
 	require.NoError(t, err, "fixture: valid data must not cause an error")
-	return order
+	return o
 }
 
 func newOrderInStatus(t testing.TB, s order.Status) *order.Order {
 	t.Helper()
 
-	order := newOrder(t)
-	order.Status = s
-	return order
+	o := newOrder(t)
+	o.Status = s
+	return o
 }
 
 func allStatuses() []order.Status {
