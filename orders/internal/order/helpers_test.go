@@ -1,7 +1,7 @@
 package order_test
 
 import (
-	order "fdelivery_orders/internal/domain/order"
+	"fdelivery_orders/internal/order"
 	"testing"
 	"time"
 

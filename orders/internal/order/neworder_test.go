@@ -1,7 +1,7 @@
 package order_test
 
 import (
-	order "fdelivery_orders/internal/domain/order"
+	"fdelivery_orders/internal/order"
 	"testing"
 
 	"github.com/google/uuid"
@@ -24,6 +24,7 @@ func TestNewOrderSuccess(t *testing.T) {
 	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress)
 	assert.Equal(t, f.now, got.CreatedAt)
 	assert.Equal(t, order.Created, got.Status)
+	assert.Equal(t, int64(209600), got.TotalPrice, "59900*3 + 29900*1")
 	assert.NotEqual(t, uuid.Nil, got.ID)
 }
 
@@ -76,4 +77,35 @@ func TestNewOrderItemsAreDefensiveCopy(t *testing.T) {
 	f.items[0].Quantity = -100
 
 	assert.Equal(t, want, o.Items[0].Quantity, "mutation of the callers slice should not change it")
+}
+
+func TestNewOrderTotalPrice(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		items []order.Item
+		want  int64
+	}{
+		{
+			"qty multiplication",
+			[]order.Item{{DishID: uuid.New(), Name: "крылышки кфс", UnitPrice: 10000, Quantity: 2}},
+			20000,
+		},
+		{
+			"items accumulate",
+			[]order.Item{validItem(), anotherItem()},
+			209600,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			o, err := order.NewOrder(uuid.New(), uuid.New(), tt.items, "Улица пушкина дом колотушкина", fixedNow)
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, o.TotalPrice)
+		})
+	}
 }

@@ -1,7 +1,7 @@
 package order_test
 
 import (
-	order "fdelivery_orders/internal/domain"
+	"fdelivery_orders/internal/order"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
