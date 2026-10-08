@@ -5,3 +5,4 @@ LICENSE
 *.log
 tmp/
 build/
+*.env

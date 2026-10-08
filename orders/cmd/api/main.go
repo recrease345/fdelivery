@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fdelivery_orders/internal/logger"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,16 +15,23 @@ import (
 type pool struct{}
 
 func (pool) PingContext(ctx context.Context) error { return nil }
-
 func main() {
-	log := logger.New()
 	var pool pool
+
+	// логгер
+	slogger, err := logger.New()
+	if err != nil {
+		log.Fatalf("failed to initialize logger: %v", err)
+	}
+
+	// маршрутизация
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
 		defer cancel()
-		if err := pool.PingContext(ctx); err != nil {
+
+		if err := pool.PingContext(ctx); err != nil { // потом над поменять на реальный пул!!!
 			w.WriteHeader(503)
 			return
 		}
@@ -50,8 +58,8 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-			log.Error("server error", "error", err)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slogger.Error("server error", "error", err)
 		}
 	}()
 
@@ -62,8 +70,8 @@ func main() {
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Error("Server stopped forcibly", "error", err)
+		slogger.Error("Server stopped forcibly", "error", err)
 	}
 
-	log.Info("Server stopped")
+	slogger.Info("Server stopped")
 }

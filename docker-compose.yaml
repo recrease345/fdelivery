@@ -91,9 +91,10 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_INSYNC_REPLICAS: 1
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
 
     volumes:
-      - kafka_data:/tmp/kraft-combined-logs
+      - kafka_data:/var/lib/kafka/data
 
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null"]
@@ -170,6 +171,9 @@ services:
       - fdelivery_net
     ports:
       - "8081:8081"
+
+    environment: 
+      - LOG_LEVEL=${LOG_LEVEL}
     depends_on:
       postgres:
         condition: service_healthy
