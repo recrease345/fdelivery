@@ -71,3 +71,12 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, deliveryAd
 		CreatedAt:       now,
 	}, nil
 }
+
+func (o *Order) Cancel() (Compensation, *InvalidTransitionError) {
+	comp := compensations[o.Status]
+	if err := o.TransitionTo(Cancelled); err != nil {
+		return CompUnset, err
+	}
+
+	return comp, nil
+}

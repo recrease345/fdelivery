@@ -79,3 +79,4 @@ func CompensationFor(s Status) Compensation {
 
 	return compensations[s]
 }
+
