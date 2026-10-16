@@ -18,7 +18,7 @@ func TestEveryCancellableStatusHasCompensation(t *testing.T) {
 			o := newOrderInStatus(t, from)
 
 			comp, err := order.CancelForTest(o)
-			if err != nil {
+			if err == nil {
 				assert.NotEqual(t, order.CompUnset, comp, "cancel from %s succeded, compensation must be defined", from)
 				return
 			}
@@ -28,7 +28,7 @@ func TestEveryCancellableStatusHasCompensation(t *testing.T) {
 	}
 }
 
-func TestcancelCompensationContract(t *testing.T) {
+func TestCancelCompensationContract(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {

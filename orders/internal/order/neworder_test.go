@@ -18,14 +18,14 @@ func TestNewOrderSuccess(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, f.userID, got.UserID)
-	assert.Equal(t, f.restaurantID, got.RestaurantID)
-	assert.Equal(t, f.items, got.Items)
-	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress)
-	assert.Equal(t, f.now, got.CreatedAt)
-	assert.Equal(t, order.Created, got.Status)
-	assert.Equal(t, int64(209600), got.TotalPrice, "59900*3 + 29900*1")
-	assert.NotEqual(t, uuid.Nil, got.ID)
+	assert.Equal(t, f.userID, got.UserID())
+	assert.Equal(t, f.restaurantID, got.RestaurantID())
+	assert.Equal(t, f.items, got.Items())
+	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress())
+	assert.Equal(t, f.now, got.CreatedAt())
+	assert.Equal(t, order.Created, got.Status())
+	assert.Equal(t, int64(209600), got.TotalPrice(), "59900*3 + 29900*1")
+	assert.NotEqual(t, uuid.Nil, got.ID())
 }
 
 func TestNewOrderValidation(t *testing.T) {
@@ -79,7 +79,7 @@ func TestNewOrderItemsAreDefensiveCopy(t *testing.T) {
 	assert.Equal(t, want, o.Items()[0].Quantity, "mutation of the callers slice should not change it")
 }
 
-func TestitemsGetterReturnDefensiveCopy(t *testing.T) {
+func TestItemsGetterReturnDefensiveCopy(t *testing.T) {
 	t.Parallel()
 
 	o := newOrder(t)
@@ -118,7 +118,7 @@ func TestNewOrderTotalPrice(t *testing.T) {
 			o, err := order.NewOrder(uuid.New(), uuid.New(), tt.items, "Улица пушкина дом колотушкина", fixedNow)
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, o.TotalPrice)
+			assert.Equal(t, tt.want, o.TotalPrice())
 		})
 	}
 }

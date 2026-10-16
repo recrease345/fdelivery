@@ -48,6 +48,8 @@ func TestRestoreRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, got)
 
+	assert.Equal(t, src.ID(), got.ID())
+	assert.Equal(t, src.UserID(), got.UserID())
 	assert.Equal(t, src.RestaurantID(), got.RestaurantID())
 	assert.Equal(t, src.TotalPrice(), got.TotalPrice())
 	assert.Equal(t, src.Items(), got.Items())

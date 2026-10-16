@@ -76,7 +76,7 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, deliveryAd
 
 func Restore(id uuid.UUID, userID uuid.UUID, restaurantID uuid.UUID, totalPrice int64, items []Item, deliveryAddress string, createdAt time.Time, status Status) (*Order, error) {
 	if id == uuid.Nil {
-		return nil, ErrInvalidUserID
+		return nil, ErrInvalidID
 	}
 
 	switch status {

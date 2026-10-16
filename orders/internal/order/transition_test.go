@@ -55,7 +55,7 @@ func TestTransitionToMatrix(t *testing.T) {
 	t.Parallel()
 
 	for _, from := range allStatuses() {
-		for _, to := range allStatuses() {
+		for _, to := range transitionTargets() {
 			t.Run(string(from)+"_to_"+string(to), func(t *testing.T) {
 				t.Parallel()
 
@@ -65,12 +65,12 @@ func TestTransitionToMatrix(t *testing.T) {
 
 				if allowedTransitions[from][to] {
 					require.Nil(t, err)
-					assert.Equal(t, to, o.Status, "successful transition should change the status")
+					assert.Equal(t, to, o.Status(), "successful transition should change the status")
 				} else {
 					require.NotNil(t, err)
 					assert.Equal(t, &order.InvalidTransitionError{From: from, To: to}, err,
 						"error must contain both statuses")
-					assert.Equal(t, from, o.Status, "an unsuccessful transition should not change the status")
+					assert.Equal(t, from, o.Status(), "an unsuccessful transition should not change the status")
 
 					if to == order.Cancelled || to == order.FailedAssign {
 						assert.Equal(t, order.CompUnset, comp, "rejecte4d transition must be unset")
@@ -101,5 +101,5 @@ func TestTransitionToFullLifeCycle(t *testing.T) {
 		require.Nil(t, err, "transition to %s should be allowed", to)
 	}
 
-	assert.Equal(t, order.Delivered, o.Status)
+	assert.Equal(t, order.Delivered, o.Status())
 }
