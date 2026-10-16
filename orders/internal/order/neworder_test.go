@@ -1,6 +1,7 @@
-package order
+package order_test
 
 import (
+	"fdelivery_orders/internal/order"
 	"testing"
 
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ func TestNewOrderSuccess(t *testing.T) {
 
 	f := validFixture()
 
-	got, err := NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
+	got, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
 
 	require.NoError(t, err)
 	require.NotNil(t, got)
@@ -22,7 +23,7 @@ func TestNewOrderSuccess(t *testing.T) {
 	assert.Equal(t, f.items, got.Items)
 	assert.Equal(t, f.deliveryAddress, got.DeliveryAddress)
 	assert.Equal(t, f.now, got.CreatedAt)
-	assert.Equal(t, Created, got.Status)
+	assert.Equal(t, order.Created, got.Status)
 	assert.Equal(t, int64(209600), got.TotalPrice, "59900*3 + 29900*1")
 	assert.NotEqual(t, uuid.Nil, got.ID)
 }
@@ -35,18 +36,18 @@ func TestNewOrderValidation(t *testing.T) {
 		mutate  func(f *fixture)
 		wantErr error
 	}{
-		{"nil user id", func(f *fixture) { f.userID = uuid.Nil }, ErrInvalidUserID},
-		{"nil restaurant id", func(f *fixture) { f.restaurantID = uuid.Nil }, ErrInvalidRestaurantID},
-		{"nil items", func(f *fixture) { f.items = nil }, ErrInvalidItems},
-		{"empty items", func(f *fixture) { f.items = []Item{} }, ErrInvalidItems},
-		{"empty delivery address", func(f *fixture) { f.deliveryAddress = "" }, ErrInvalidDeliveryAddress},
-		{"item empty name", func(f *fixture) { f.items[0].Name = "" }, ErrInvalidItemsAttributes},
-		{"item nil dish id", func(f *fixture) { f.items[0].DishID = uuid.Nil }, ErrInvalidItemsAttributes},
-		{"item zero quantity", func(f *fixture) { f.items[0].Quantity = 0 }, ErrInvalidItemsAttributes},
-		{"item negative quantity", func(f *fixture) { f.items[0].Quantity = -1 }, ErrInvalidItemsAttributes},
-		{"item zero unit price", func(f *fixture) { f.items[0].UnitPrice = 0 }, ErrInvalidItemsAttributes},
-		{"item negative unit price", func(f *fixture) { f.items[0].UnitPrice = -1 }, ErrInvalidItemsAttributes},
-		{"second item invalid", func(f *fixture) { f.items[1].Quantity = 0 }, ErrInvalidItemsAttributes},
+		{"nil user id", func(f *fixture) { f.userID = uuid.Nil }, order.ErrInvalidUserID},
+		{"nil restaurant id", func(f *fixture) { f.restaurantID = uuid.Nil }, order.ErrInvalidRestaurantID},
+		{"nil items", func(f *fixture) { f.items = nil }, order.ErrInvalidItems},
+		{"empty items", func(f *fixture) { f.items = []order.Item{} }, order.ErrInvalidItems},
+		{"empty delivery address", func(f *fixture) { f.deliveryAddress = "" }, order.ErrInvalidDeliveryAddress},
+		{"item empty name", func(f *fixture) { f.items[0].Name = "" }, order.ErrInvalidItemsAttributes},
+		{"item nil dish id", func(f *fixture) { f.items[0].DishID = uuid.Nil }, order.ErrInvalidItemsAttributes},
+		{"item zero quantity", func(f *fixture) { f.items[0].Quantity = 0 }, order.ErrInvalidItemsAttributes},
+		{"item negative quantity", func(f *fixture) { f.items[0].Quantity = -1 }, order.ErrInvalidItemsAttributes},
+		{"item zero unit price", func(f *fixture) { f.items[0].UnitPrice = 0 }, order.ErrInvalidItemsAttributes},
+		{"item negative unit price", func(f *fixture) { f.items[0].UnitPrice = -1 }, order.ErrInvalidItemsAttributes},
+		{"second item invalid", func(f *fixture) { f.items[1].Quantity = 0 }, order.ErrInvalidItemsAttributes},
 	}
 
 	for _, tt := range tests {
@@ -56,7 +57,7 @@ func TestNewOrderValidation(t *testing.T) {
 			f := validFixture()
 			tt.mutate(&f)
 
-			got, err := NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
+			got, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
 
 			require.ErrorIs(t, err, tt.wantErr)
 			assert.Nil(t, got, "on validation error constructor must return nil")
@@ -69,13 +70,26 @@ func TestNewOrderItemsAreDefensiveCopy(t *testing.T) {
 
 	f := validFixture()
 
-	o, err := NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
+	o, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, fixedNow)
 	require.NoError(t, err)
 
 	want := f.items[0].Quantity
 	f.items[0].Quantity = -100
 
-	assert.Equal(t, want, o.Items[0].Quantity, "mutation of the callers slice should not change it")
+	assert.Equal(t, want, o.Items()[0].Quantity, "mutation of the callers slice should not change it")
+}
+
+func TestitemsGetterReturnDefensiveCopy(t *testing.T) {
+	t.Parallel()
+
+	o := newOrder(t)
+
+	want := o.Items()[0].Quantity
+
+	returned := o.Items()
+	returned[0].Quantity = -1
+
+	assert.Equal(t, want, o.Items()[0].Quantity, "mutation of returned slice must not affect the order")
 }
 
 func TestNewOrderTotalPrice(t *testing.T) {
@@ -83,17 +97,17 @@ func TestNewOrderTotalPrice(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		items []Item
+		items []order.Item
 		want  int64
 	}{
 		{
 			"qty multiplication",
-			[]Item{{DishID: uuid.New(), Name: "крылышки кфс", UnitPrice: 10000, Quantity: 2}},
+			[]order.Item{{DishID: uuid.New(), Name: "крылышки кфс", UnitPrice: 10000, Quantity: 2}},
 			20000,
 		},
 		{
 			"items accumulate",
-			[]Item{validItem(), anotherItem()},
+			[]order.Item{validItem(), anotherItem()},
 			209600,
 		},
 	}
@@ -101,7 +115,7 @@ func TestNewOrderTotalPrice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			o, err := NewOrder(uuid.New(), uuid.New(), tt.items, "Улица пушкина дом колотушкина", fixedNow)
+			o, err := order.NewOrder(uuid.New(), uuid.New(), tt.items, "Улица пушкина дом колотушкина", fixedNow)
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, o.TotalPrice)

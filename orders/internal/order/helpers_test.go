@@ -1,6 +1,7 @@
-package order
+package order_test
 
 import (
+	"fdelivery_orders/internal/order"
 	"testing"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 
 var fixedNow = time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
 
-func validItem() Item {
-	return Item{
+func validItem() order.Item {
+	return order.Item{
 		DishID:    uuid.New(),
 		Name:      "пицца",
 		UnitPrice: 59900,
@@ -19,8 +20,8 @@ func validItem() Item {
 	}
 }
 
-func anotherItem() Item {
-	return Item{
+func anotherItem() order.Item {
+	return order.Item{
 		DishID:    uuid.New(),
 		Name:      "тройной чизбургер дабл трипл воппер",
 		UnitPrice: 29900,
@@ -32,13 +33,13 @@ func anotherItem() Item {
 type fixture struct {
 	userID          uuid.UUID
 	restaurantID    uuid.UUID
-	items           []Item
+	items           []order.Item
 	deliveryAddress string
 	now             time.Time
 }
 
 func validFixture() fixture {
-	items := []Item{validItem(), anotherItem()}
+	items := []order.Item{validItem(), anotherItem()}
 
 	return fixture{
 		userID:          uuid.New(),
@@ -49,25 +50,37 @@ func validFixture() fixture {
 	}
 }
 
-func newOrder(t testing.TB) *Order {
+func newOrder(t testing.TB) *order.Order {
 	t.Helper()
 
 	f := validFixture()
-	o, err := NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, f.now)
+	o, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, f.now)
 	require.NoError(t, err, "fixture: valid data must not cause an error")
 	return o
 }
 
-func newOrderInStatus(t testing.TB, s Status) *Order {
+func newOrderInStatus(t testing.TB, status order.Status) *order.Order {
 	t.Helper()
 
-	o := newOrder(t)
-	o.Status = s
+	src := newOrder(t)
+	o, err := order.Restore(
+		src.ID(),
+		src.UserID(),
+		src.RestaurantID(),
+		src.TotalPrice(),
+		src.Items(),
+		src.DeliveryAddress(),
+		src.CreatedAt(),
+		status,
+	)
+
+	require.NoError(t, err, "fixture: valid snapshot must restore without err")
 	return o
 }
 
-func allStatuses() []Status {
-	return []Status{
-		Created, Paid, Preparing, Ready, Assigning, Assigned, Delivering, Delivered, Cancelled, FailedAssign,
+func allStatuses() []order.Status {
+	return []order.Status{
+		order.Created, order.Paid, order.Preparing, order.Ready, order.Assigning,
+		order.Assigned, order.Delivering, order.Delivered, order.Cancelled, order.FailedAssign,
 	}
 }

@@ -38,7 +38,7 @@ type Order struct {
 
 func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, deliveryAddress string, now time.Time) (*Order, error) {
 	if userID == uuid.Nil {
-		return nil, ErrInvalidID
+		return nil, ErrInvalidUserID
 	}
 
 	if restaurantID == uuid.Nil {
