@@ -40,42 +40,32 @@ var transitions = map[Status][]Status{
 type Compensation int
 
 const (
-	CompUnset Compensation = 0
-	CompNone  Compensation = iota + 1
+	CompUnset Compensation = iota
+	CompNone  
 	CompVoid
 	CompVoidRestaurant
 	CompVoidReleaseDriverRestaurant
-	CompForbidden
 )
 
 var compensations = map[Status]Compensation{
-	Created:    CompNone,
-	Paid:       CompVoid,
-	Preparing:  CompVoidRestaurant,
-	Ready:      CompVoidRestaurant,
-	Assigning:  CompVoidReleaseDriverRestaurant,
-	Assigned:   CompVoidReleaseDriverRestaurant,
-	Delivering: CompForbidden,
+	Created:   CompNone,
+	Paid:      CompVoid,
+	Preparing: CompVoidRestaurant,
+	Ready:     CompVoidRestaurant,
+	Assigning: CompVoidReleaseDriverRestaurant,
+	Assigned:  CompVoidReleaseDriverRestaurant,
 }
 
-func (order *Order) TransitionTo(to Status) *InvalidTransitionError {
-	for _, status := range transitions[order.Status] {
+func (order *Order) transitionTo(to Status) *InvalidTransitionError {
+	for _, status := range transitions[order.status] {
 		if status == to {
-			order.Status = to
+			order.status = to
 			return nil
 		}
 	}
 
 	return &InvalidTransitionError{
-		From: order.Status,
+		From: order.status,
 		To:   to,
 	}
-}
-
-func CompensationFor(s Status) Compensation {
-	if _, ok := compensations[s]; !ok {
-		return CompUnset
-	}
-
-	return compensations[s]
 }
