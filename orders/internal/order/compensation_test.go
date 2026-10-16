@@ -1,48 +1,72 @@
-package order
+package order_test
 
 import (
+	"fdelivery_orders/internal/order"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestCompensationFor(t *testing.T) {
+func TestEveryCancellableStatusHasCompensation(t *testing.T) {
+	t.Parallel()
+
+	for _, from := range allStatuses() {
+		t.Run(string(from), func(t *testing.T) {
+			t.Parallel()
+
+			o := newOrderInStatus(t, from)
+
+			comp, err := order.CancelForTest(o)
+			if err != nil {
+				assert.NotEqual(t, order.CompUnset, comp, "cancel from %s succeded, compensation must be defined", from)
+				return
+			}
+
+			assert.Equal(t, order.CompUnset, comp, "cancel from %s rejected, it must not have a compensation")
+		})
+	}
+}
+
+func TestcancelCompensationContract(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name   string
-		status Status
-		want   Compensation
+		name     string
+		from     order.Status
+		wantComp order.Compensation
 	}{
-		{"created", Created, CompNone},
-		{"paid", Paid, CompVoid},
-		{"preparing", Preparing, CompVoidRestaurant},
-		{"ready", Ready, CompVoidRestaurant},
-		{"assigning", Assigning, CompVoidReleaseDriverRestaurant},
-		{"assigned", Assigned, CompVoidReleaseDriverRestaurant},
-		{"delivering", Delivering, CompForbidden},
-		{"terminal cancelled", Cancelled, CompUnset},
-		{"terminal delivered", Delivered, CompUnset},
-		{"terminal failed assign", FailedAssign, CompUnset},
-		{"unknown status", Status("unknownStatus"), CompUnset},
+		{"cancel right after creation", order.Created, order.CompNone},
+		{"cancel after payment, void the charge", order.Paid, order.CompVoid},
+		{"cancel while the kitchen is cooking", order.Preparing, order.CompVoidRestaurant},
+		{"cancel when food is ready", order.Ready, order.CompVoidRestaurant},
+		{"cancel while searching for a courier", order.Assigning, order.CompVoidReleaseDriverRestaurant},
+		{"cancel after courier was assigned", order.Assigned, order.CompVoidReleaseDriverRestaurant},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, CompensationFor(tt.status))
+
+			o := newOrderInStatus(t, tt.from)
+
+			comp, err := order.CancelForTest(o)
+
+			require.Nil(t, err, "cancel from %s must be allowed", tt.from)
+			assert.Equal(t, order.Cancelled, o.Status())
+			assert.Equal(t, tt.wantComp, comp, "compensation must reflect status we cancel from")
 		})
 	}
 }
 
-func TestEveryCancellableStatusHasCompensation(t *testing.T) {
+func TestFailedAssignCompensation(t *testing.T) {
 	t.Parallel()
 
-	for from, targets := range transitions {
-		for _, to := range targets {
-			if to == Cancelled && Compensations[from] == CompUnset {
-				t.Errorf("status %q is cancellable but Compensation policy is not defined", from)
-			}
-		}
-	}
+	o := newOrderInStatus(t, order.Assigning)
+
+	comp, err := order.FailedAssignForTest(o)
+
+	require.Nil(t, err)
+	assert.Equal(t, order.FailedAssign, o.Status())
+	assert.Equal(t, order.CompVoidReleaseDriverRestaurant, comp)
 }
