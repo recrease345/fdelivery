@@ -1,7 +1,6 @@
-package order_test
+package order
 
 import (
-	"fdelivery_orders/internal/order"
 	"testing"
 	"time"
 
@@ -11,8 +10,8 @@ import (
 
 var fixedNow = time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
 
-func validItem() order.Item {
-	return order.Item{
+func validItem() Item {
+	return Item{
 		DishID:    uuid.New(),
 		Name:      "пицца",
 		UnitPrice: 59900,
@@ -20,8 +19,8 @@ func validItem() order.Item {
 	}
 }
 
-func anotherItem() order.Item {
-	return order.Item{
+func anotherItem() Item {
+	return Item{
 		DishID:    uuid.New(),
 		Name:      "тройной чизбургер дабл трипл воппер",
 		UnitPrice: 29900,
@@ -33,13 +32,13 @@ func anotherItem() order.Item {
 type fixture struct {
 	userID          uuid.UUID
 	restaurantID    uuid.UUID
-	items           []order.Item
+	items           []Item
 	deliveryAddress string
 	now             time.Time
 }
 
 func validFixture() fixture {
-	items := []order.Item{validItem(), anotherItem()}
+	items := []Item{validItem(), anotherItem()}
 
 	return fixture{
 		userID:          uuid.New(),
@@ -50,16 +49,16 @@ func validFixture() fixture {
 	}
 }
 
-func newOrder(t testing.TB) *order.Order {
+func newOrder(t testing.TB) *Order {
 	t.Helper()
 
 	f := validFixture()
-	o, err := order.NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, f.now)
+	o, err := NewOrder(f.userID, f.restaurantID, f.items, f.deliveryAddress, f.now)
 	require.NoError(t, err, "fixture: valid data must not cause an error")
 	return o
 }
 
-func newOrderInStatus(t testing.TB, s order.Status) *order.Order {
+func newOrderInStatus(t testing.TB, s Status) *Order {
 	t.Helper()
 
 	o := newOrder(t)
@@ -67,8 +66,8 @@ func newOrderInStatus(t testing.TB, s order.Status) *order.Order {
 	return o
 }
 
-func allStatuses() []order.Status {
-	return []order.Status{
-		order.Created, order.Paid, order.Preparing, order.Ready, order.Assigning, order.Assigned, order.Delivering, order.Delivered, order.Cancelled, order.FailedAssign,
+func allStatuses() []Status {
+	return []Status{
+		Created, Paid, Preparing, Ready, Assigning, Assigned, Delivering, Delivered, Cancelled, FailedAssign,
 	}
 }

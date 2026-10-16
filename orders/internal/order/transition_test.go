@@ -1,21 +1,20 @@
-package order_test
+package order
 
 import (
-	"fdelivery_orders/internal/order"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var allowedTransitions = map[order.Status]map[order.Status]bool{
-	order.Created:    {order.Paid: true, order.Cancelled: true},
-	order.Paid:       {order.Preparing: true, order.Cancelled: true},
-	order.Preparing:  {order.Ready: true, order.Cancelled: true},
-	order.Ready:      {order.Assigning: true, order.Cancelled: true},
-	order.Assigning:  {order.Assigned: true, order.FailedAssign: true, order.Cancelled: true},
-	order.Assigned:   {order.Delivering: true, order.Cancelled: true},
-	order.Delivering: {order.Delivered: true},
+var allowedTransitions = map[Status]map[Status]bool{
+	Created:    {Paid: true, Cancelled: true},
+	Paid:       {Preparing: true, Cancelled: true},
+	Preparing:  {Ready: true, Cancelled: true},
+	Ready:      {Assigning: true, Cancelled: true},
+	Assigning:  {Assigned: true, FailedAssign: true, Cancelled: true},
+	Assigned:   {Delivering: true, Cancelled: true},
+	Delivering: {Delivered: true},
 }
 
 func TestTransitionTo_Matrix(t *testing.T) {
@@ -28,14 +27,14 @@ func TestTransitionTo_Matrix(t *testing.T) {
 
 				o := newOrderInStatus(t, from)
 
-				err := o.TransitionTo(to)
+				err := o.transitionTo(to)
 
 				if allowedTransitions[from][to] {
 					require.Nil(t, err)
 					assert.Equal(t, to, o.Status, "successful transition should change the status")
 				} else {
 					require.NotNil(t, err)
-					assert.Equal(t, &order.InvalidTransitionError{From: from, To: to}, err,
+					assert.Equal(t, &InvalidTransitionError{From: from, To: to}, err,
 						"error must contain both statuses")
 					assert.Equal(t, from, o.Status, "an unsuccessful transition should not change the status")
 				}
@@ -49,13 +48,13 @@ func TestTransitionToFullLifeCycle(t *testing.T) {
 
 	o := newOrder(t)
 
-	for _, s := range []order.Status{
-		order.Paid, order.Preparing, order.Ready, order.Assigning, order.Assigned, order.Delivering, order.Delivered,
+	for _, s := range []Status{
+		Paid, Preparing, Ready, Assigning, Assigned, Delivering, Delivered,
 	} {
-		require.Nil(t, o.TransitionTo(s), "transition to %s should be allowed", s)
+		require.Nil(t, o.transitionTo(s), "transition to %s should be allowed", s)
 	}
 
-	assert.Equal(t, order.Delivered, o.Status)
+	assert.Equal(t, Delivered, o.Status)
 }
 
 func TestTransitionToUnknownTargetStatus(t *testing.T) {
@@ -63,9 +62,9 @@ func TestTransitionToUnknownTargetStatus(t *testing.T) {
 
 	o := newOrder(t)
 
-	err := o.TransitionTo(order.Status("unknownStatus"))
+	err := o.transitionTo(Status("unknownStatus"))
 
 	require.NotNil(t, err)
 
-	assert.Equal(t, &order.InvalidTransitionError{From: order.Created, To: order.Status("unknownStatus")}, err)
+	assert.Equal(t, &InvalidTransitionError{From: Created, To: Status("unknownStatus")}, err)
 }

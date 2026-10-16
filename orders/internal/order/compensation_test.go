@@ -40,8 +40,8 @@ func TestEveryCancellableStatusHasCompensation(t *testing.T) {
 
 	for from, targets := range transitions {
 		for _, to := range targets {
-			if to == Cancelled && compensations[from] == CompUnset {
-				t.Errorf("status %q is cancellable but compensation policy is not defined", from)
+			if to == Cancelled && Compensations[from] == CompUnset {
+				t.Errorf("status %q is cancellable but Compensation policy is not defined", from)
 			}
 		}
 	}
