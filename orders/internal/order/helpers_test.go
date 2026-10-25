@@ -59,16 +59,28 @@ func newOrder(t testing.TB) *order.Order {
 	return o
 }
 
-func newOrderInStatus(t testing.TB, s order.Status) *order.Order {
+func newOrderInStatus(t testing.TB, status order.Status) *order.Order {
 	t.Helper()
 
-	o := newOrder(t)
-	o.Status = s
+	src := newOrder(t)
+	o, err := order.Restore(
+		src.ID(),
+		src.UserID(),
+		src.RestaurantID(),
+		src.TotalPrice(),
+		src.Items(),
+		src.DeliveryAddress(),
+		src.CreatedAt(),
+		status,
+	)
+
+	require.NoError(t, err, "fixture: valid snapshot must restore without err")
 	return o
 }
 
 func allStatuses() []order.Status {
 	return []order.Status{
-		order.Created, order.Paid, order.Preparing, order.Ready, order.Assigning, order.Assigned, order.Delivering, order.Delivered, order.Cancelled, order.FailedAssign,
+		order.Created, order.Paid, order.Preparing, order.Ready, order.Assigning,
+		order.Assigned, order.Delivering, order.Delivered, order.Cancelled, order.FailedAssign,
 	}
 }
