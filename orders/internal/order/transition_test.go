@@ -73,7 +73,7 @@ func TestTransitionToMatrix(t *testing.T) {
 					assert.Equal(t, from, o.Status(), "an unsuccessful transition should not change the status")
 
 					if to == order.Cancelled || to == order.FailedAssign {
-						assert.Equal(t, order.CompUnset, comp, "rejecte4d transition must be unset")
+						assert.Equal(t, order.CompUnset, comp, "rejected transition must be unset")
 					}
 				}
 			})

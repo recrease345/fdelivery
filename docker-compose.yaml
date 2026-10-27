@@ -98,7 +98,7 @@ services:
       - kafka_data:/var/lib/kafka/data
 
     healthcheck:
-      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/9092'"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -175,6 +175,9 @@ services:
 
     environment: 
       - LOG_LEVEL=${LOG_LEVEL}
+
+    tty: true
+
     depends_on:
       postgres:
         condition: service_healthy
