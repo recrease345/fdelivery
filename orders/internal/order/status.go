@@ -33,7 +33,7 @@ var transitions = map[Status][]Status{
 	Preparing:  {Ready, Cancelled},
 	Ready:      {Assigning, Cancelled},
 	Assigning:  {Assigned, FailedAssign, Cancelled},
-	Assigned:   {Delivering, Cancelled},
+	Assigned:   {Delivering, Cancelled, Assigning},
 	Delivering: {Delivered},
 }
 
@@ -41,19 +41,23 @@ type Compensation int
 
 const (
 	CompUnset Compensation = iota
-	CompNone  
+	CompNone
 	CompVoid
 	CompVoidRestaurant
 	CompVoidReleaseDriverRestaurant
 )
 
-var compensations = map[Status]Compensation{
-	Created:   CompNone,
-	Paid:      CompVoid,
-	Preparing: CompVoidRestaurant,
-	Ready:     CompVoidRestaurant,
-	Assigning: CompVoidReleaseDriverRestaurant,
-	Assigned:  CompVoidReleaseDriverRestaurant,
+type transition struct{ From, To Status }
+
+var compensations = map[transition]Compensation{
+    {Created, Cancelled}:      CompNone,
+    {Paid, Cancelled}:         CompVoid,
+    {Preparing, Cancelled}:    CompVoidRestaurant,
+    {Ready, Cancelled}:        CompVoidRestaurant,
+    {Assigning, Cancelled}:    CompVoidReleaseDriverRestaurant,
+    {Assigning, FailedAssign}: CompVoid, 
+    {Assigned, Cancelled}:     CompVoidReleaseDriverRestaurant,
+    {Assigned, Assigning}:     CompNone, 
 }
 
 func (order *Order) transitionTo(to Status) *InvalidTransitionError {

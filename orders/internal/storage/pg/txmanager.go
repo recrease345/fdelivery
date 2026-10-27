@@ -4,34 +4,33 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type txKey struct{}
 
 type TxManager struct {
 	pool *pgxpool.Pool
 }
 
-func (m *TxManager) WithinTx(ctx context.Context, fn func(context.Context) error) error {
-	if _, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
-		return fn(ctx)
-	}
-
+func (m *TxManager) WithinTx(ctx context.Context, fn func(ctx context.Context, q Querier) error) error {
 	tx, err := m.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 
-	ctx = context.WithValue(ctx, txKey{}, tx)
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback(context.WithoutCancel(ctx))
+			panic(p)
+		}
+	}()
 
-	if err := fn(ctx); err != nil {
+	if err := fn(ctx, tx); err != nil {
 		_ = tx.Rollback(context.WithoutCancel(ctx))
 		return err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
+		_ = tx.Rollback(context.WithoutCancel(ctx))
 		return fmt.Errorf("commit tx: %w", err)
 	}
 

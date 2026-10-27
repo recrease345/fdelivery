@@ -14,11 +14,11 @@ var allowedTransitions = map[order.Status]map[order.Status]bool{
 	order.Preparing:  {order.Ready: true, order.Cancelled: true},
 	order.Ready:      {order.Assigning: true, order.Cancelled: true},
 	order.Assigning:  {order.Assigned: true, order.FailedAssign: true, order.Cancelled: true},
-	order.Assigned:   {order.Delivering: true, order.Cancelled: true},
+	order.Assigned:   {order.Delivering: true, order.Cancelled: true, order.Assigning: true},
 	order.Delivering: {order.Delivered: true},
 }
 
-func applyTransition(o *order.Order, to order.Status) (order.Compensation, *order.InvalidTransitionError) {
+func applyTransition(o *order.Order, to order.Status) (order.Compensation, error) {
 	switch to {
 	case order.Paid:
 		return order.CompUnset, order.PaidForTest(o)

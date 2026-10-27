@@ -99,8 +99,8 @@ func Restore(id uuid.UUID, userID uuid.UUID, restaurantID uuid.UUID, totalPrice 
 	}, nil
 }
 
-func (o *Order) cancel() (Compensation, *InvalidTransitionError) {
-	comp := compensations[o.status]
+func (o *Order) cancel() (Compensation, error) {
+	comp := compensations[transition{o.status, Cancelled}]
 	if err := o.transitionTo(Cancelled); err != nil {
 		return CompUnset, err
 	}
@@ -108,7 +108,7 @@ func (o *Order) cancel() (Compensation, *InvalidTransitionError) {
 	return comp, nil
 }
 
-func (o *Order) paid() *InvalidTransitionError {
+func (o *Order) paid() error {
 	if err := o.transitionTo(Paid); err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (o *Order) paid() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) preparing() *InvalidTransitionError {
+func (o *Order) preparing() error {
 	if err := o.transitionTo(Preparing); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (o *Order) preparing() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) ready() *InvalidTransitionError {
+func (o *Order) ready() error {
 	if err := o.transitionTo(Ready); err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (o *Order) ready() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) assigning() *InvalidTransitionError {
+func (o *Order) assigning() error {
 	if err := o.transitionTo(Assigning); err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (o *Order) assigning() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) assigned() *InvalidTransitionError {
+func (o *Order) assigned() error {
 	if err := o.transitionTo(Assigned); err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (o *Order) assigned() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) delivering() *InvalidTransitionError {
+func (o *Order) delivering() error {
 	if err := o.transitionTo(Delivering); err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (o *Order) delivering() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) delivered() *InvalidTransitionError {
+func (o *Order) delivered() error {
 	if err := o.transitionTo(Delivered); err != nil {
 		return err
 	}
@@ -164,8 +164,8 @@ func (o *Order) delivered() *InvalidTransitionError {
 	return nil
 }
 
-func (o *Order) failedAssign() (Compensation, *InvalidTransitionError) {
-	comp := compensations[o.status]
+func (o *Order) failedAssign() (Compensation, error) {
+	comp := compensations[transition{o.status, FailedAssign}]
 
 	if err := o.transitionTo(FailedAssign); err != nil {
 		return CompUnset, err
