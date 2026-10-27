@@ -2,6 +2,7 @@ package order_test
 
 import (
 	"fdelivery_orders/internal/order"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -26,6 +27,15 @@ func TestNewOrderSuccess(t *testing.T) {
 	assert.Equal(t, order.Created, got.Status())
 	assert.Equal(t, int64(209600), got.TotalPrice(), "59900*3 + 29900*1")
 	assert.NotEqual(t, uuid.Nil, got.ID())
+
+	t.Run("maxdelivery adress len 300 chars", func(t *testing.T) {
+		address := strings.Repeat("a", 300)
+		got, err := order.NewOrder(f.userID, f.restaurantID, f.items, address, fixedNow)
+
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		assert.Equal(t, address, got.DeliveryAddress())
+	})
 }
 
 func TestNewOrderValidation(t *testing.T) {
@@ -41,6 +51,9 @@ func TestNewOrderValidation(t *testing.T) {
 		{"nil items", func(f *fixture) { f.items = nil }, order.ErrInvalidItems},
 		{"empty items", func(f *fixture) { f.items = []order.Item{} }, order.ErrInvalidItems},
 		{"empty delivery address", func(f *fixture) { f.deliveryAddress = "" }, order.ErrInvalidDeliveryAddress},
+		{"invalid delivery adress len", func(f *fixture) {
+			f.deliveryAddress = strings.Repeat("a", 301)
+		}, order.ErrInvalidDeliveryAddress},
 		{"item empty name", func(f *fixture) { f.items[0].Name = "" }, order.ErrInvalidItemsAttributes},
 		{"item nil dish id", func(f *fixture) { f.items[0].DishID = uuid.Nil }, order.ErrInvalidItemsAttributes},
 		{"item zero quantity", func(f *fixture) { f.items[0].Quantity = 0 }, order.ErrInvalidItemsAttributes},

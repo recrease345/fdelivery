@@ -18,6 +18,8 @@ var (
 	ErrInvalidID              = errors.New("order: id is nil")
 )
 
+const maxDeliveryAdressLen = 300
+
 type Item struct {
 	DishID    uuid.UUID
 	Name      string
@@ -49,7 +51,7 @@ func NewOrder(userID uuid.UUID, restaurantID uuid.UUID, items []Item, deliveryAd
 		return nil, ErrInvalidItems
 	}
 
-	if deliveryAddress == "" {
+	if deliveryAddress == "" || len(deliveryAddress) > maxDeliveryAdressLen {
 		return nil, ErrInvalidDeliveryAddress
 	}
 
@@ -163,13 +165,13 @@ func (o *Order) delivered() *InvalidTransitionError {
 }
 
 func (o *Order) failedAssign() (Compensation, *InvalidTransitionError) {
-	Comp := compensations[o.status]
+	comp := compensations[o.status]
 
 	if err := o.transitionTo(FailedAssign); err != nil {
 		return CompUnset, err
 	}
 
-	return Comp, nil
+	return comp, nil
 }
 
 // getters

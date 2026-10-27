@@ -31,7 +31,7 @@ func TestRestoreValidation(t *testing.T) {
 				snapshot.TotalPrice(), snapshot.Items(), snapshot.DeliveryAddress(), snapshot.CreatedAt(), tt.status)
 
 			require.ErrorIs(t, err, tt.wantErr)
-			assert.Nil(t, got, "on validation error restore must retunr nil")
+			assert.Nil(t, got, "on validation error restore must return nil")
 		})
 	}
 }
