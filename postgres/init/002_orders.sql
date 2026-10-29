@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS orders.orders (
-    id TEXT NOT NULL PRIMARY KEY,
+    id UUID NOT NULL PRIMARY KEY,
     user_id UUID NOT NULL,
     restaurant_id UUID NOT NULL,
     items JSONB NOT NULL,

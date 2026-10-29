@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fdelivery_orders/internal/logger"
+	"fdelivery_orders/internal/order"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +17,10 @@ import (
 type pool struct{}
 
 func (pool) PingContext(ctx context.Context) error { return nil }
+
+// @title orders
+// @BasePath /v1
+// @securityDefinitions.apikey X-User-ID in header
 func main() {
 	var pool pool
 
@@ -76,4 +82,13 @@ func main() {
 	}
 
 	slogger.Info("Server stopped")
+}
+
+type nopPublisher struct{ log *slog.Logger }
+
+func (p *nopPublisher) Publish(_ context.Context, ev order.Event) error {
+	p.log.Warn("publisher: nop-stab, event stays in outbox",
+		"event", ev)
+
+	return nil
 }

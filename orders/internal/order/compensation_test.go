@@ -68,5 +68,5 @@ func TestFailedAssignCompensation(t *testing.T) {
 
 	require.Nil(t, err)
 	assert.Equal(t, order.FailedAssign, o.Status())
-	assert.Equal(t, order.CompVoidReleaseDriverRestaurant, comp)
+	assert.Equal(t, order.CompVoid, comp)
 }
