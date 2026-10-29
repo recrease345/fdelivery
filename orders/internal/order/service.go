@@ -23,7 +23,7 @@ type Service struct {
 }
 
 type CreateCommand struct {
-	UserID, RestarauntID uuid.UUID
+	UserID, RestaurantID uuid.UUID
 	Items                []Item
 	DeliveryAddress      string
 	IdempotencyKey       string
@@ -42,7 +42,7 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*CreateResult,
 
 	now := time.Now()
 
-	o, err := NewOrder(cmd.UserID, cmd.RestarauntID, cmd.Items, cmd.DeliveryAddress, now)
+	o, err := NewOrder(cmd.UserID, cmd.RestaurantID, cmd.Items, cmd.DeliveryAddress, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
@@ -162,17 +162,9 @@ func (s *Service) Transit(ctx context.Context, id uuid.UUID, from, to Status) er
 }
 
 func (s *Service) Cancel(ctx context.Context, id, userID uuid.UUID) (Compensation, error) {
-	o, err := s.orders.GetByID(ctx, id)
+	o, err := s.Get(ctx, id, userID)
 	if err != nil {
-		if errors.Is(err, ErrOrderNotFound) {
-			return CompUnset, ErrOrderNotFound
-		}
-
-		return CompUnset, err
-	}
-
-	if o.UserID() != userID {
-		return CompUnset, ErrOrderNotFound
+		return CompUnset, fmt.Errorf("failed to get order: %w", err)
 	}
 
 	from := o.Status()
@@ -183,8 +175,25 @@ func (s *Service) Cancel(ctx context.Context, id, userID uuid.UUID) (Compensatio
 	}
 
 	if err := s.Transit(ctx, id, from, o.Status()); err != nil {
-		return CompUnset, fmt.Errorf("failed to trasit order status: %w", err)
+		return CompUnset, fmt.Errorf("failed to transit order status: %w", err)
 	}
 
 	return comp, nil
+}
+
+func (s *Service) Get(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*Order, error) {
+	o, err := s.orders.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return nil, ErrOrderNotFound
+		}
+
+		return nil, err
+	}
+
+	if o.UserID() != userID {
+		return nil, ErrOrderNotFound
+	}
+
+	return o, nil
 }

@@ -17,6 +17,10 @@ import (
 type pool struct{}
 
 func (pool) PingContext(ctx context.Context) error { return nil }
+
+// @title orders
+// @BasePath /v1
+// @securityDefinitions.apikey X-User-ID in header
 func main() {
 	var pool pool
 
