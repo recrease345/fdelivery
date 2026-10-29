@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS orders.idempotency_keys (
     key TEXT PRIMARY KEY,
-    order_id TEXT NOT NULL,
+    order_id UUID NOT NULL,
     response_body JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL 
 );

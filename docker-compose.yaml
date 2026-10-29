@@ -176,7 +176,8 @@ services:
     environment: 
       - LOG_LEVEL=${LOG_LEVEL}
 
-    tty: true
+    env_file:
+      - ./orders/.env
 
     depends_on:
       postgres:

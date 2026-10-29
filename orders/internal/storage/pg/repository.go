@@ -19,13 +19,7 @@ type OrderRepo struct {
 	pool *pgxpool.Pool
 }
 
-type Querier interface {
-	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-}
-
-func (r *OrderRepo) Save(ctx context.Context, q Querier, o *order.Order) error {
+func (r *OrderRepo) Save(ctx context.Context, q order.Querier, o *order.Order) error {
 	query := `
 	INSERT INTO orders.orders
 	(id, user_id, restaurant_id, items, total_price, delivery_address, status, created_at, updated_at)
@@ -48,14 +42,6 @@ func (r *OrderRepo) Save(ctx context.Context, q Querier, o *order.Order) error {
 		o.CreatedAt(),
 	)
 	if err != nil {
-		var pgErr *pgconn.PgError
-
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
-				return order.ErrOrderAlreadyExists
-			}
-		}
-
 		return fmt.Errorf("failed to save order: %w", err)
 	}
 
@@ -109,7 +95,7 @@ func (r *OrderRepo) GetByID(ctx context.Context, id uuid.UUID) (*order.Order, er
 	return o, nil
 }
 
-func (r *OrderRepo) UpdateStatus(ctx context.Context, q Querier, id uuid.UUID, from order.Status, to order.Status) error {
+func (r *OrderRepo) UpdateStatus(ctx context.Context, q order.Querier, id uuid.UUID, from order.Status, to order.Status) error {
 	query := `
 	UPDATE orders.orders
 	SET status = $1, updated_at = now()

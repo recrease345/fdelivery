@@ -2,6 +2,7 @@ package order
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"time"
 
@@ -9,22 +10,26 @@ import (
 )
 
 var (
-	ErrInvalidUserID          = errors.New("order: userID is nil")
-	ErrInvalidItems           = errors.New("order: items must be non-empty")
-	ErrInvalidRestaurantID    = errors.New("order: restaurantID is nil")
-	ErrInvalidItemsAttributes = errors.New("order: invalid item attributes")
-	ErrInvalidDeliveryAddress = errors.New("order: invalid delivery address")
-	ErrInvalidStatus          = errors.New("order: restore with invalid status")
-	ErrInvalidID              = errors.New("order: id is nil")
+	ErrValidation = errors.New("order: validation failed")
+
+	ErrInvalidUserID          = fmt.Errorf("%w: userID is nil", ErrValidation)
+	ErrInvalidItems           = fmt.Errorf("%w: items must be non-empty", ErrValidation)
+	ErrInvalidRestaurantID    = fmt.Errorf("%w: restaurantID is nil", ErrValidation)
+	ErrInvalidItemsAttributes = fmt.Errorf("%w: invalid item attributes", ErrValidation)
+	ErrInvalidDeliveryAddress = fmt.Errorf("%w: invalid delivery address", ErrValidation)
+	ErrInvalidStatus          = fmt.Errorf("%w: restore with invalid status", ErrValidation)
+	ErrInvalidID              = fmt.Errorf("%w: id is nil", ErrValidation)
+
+	ErrOrderNotFound = errors.New("order not found")
 )
 
 const maxDeliveryAdressLen = 300
 
 type Item struct {
-	DishID    uuid.UUID
-	Name      string
-	UnitPrice int64
-	Quantity  int
+	DishID    uuid.UUID `json:"dish_id"`
+	Name      string    `json:"name"`
+	UnitPrice int64     `json:"unit_price"`
+	Quantity  int       `json:"quantity"`
 }
 
 type Order struct {

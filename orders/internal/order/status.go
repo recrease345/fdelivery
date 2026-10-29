@@ -50,26 +50,31 @@ const (
 type transition struct{ From, To Status }
 
 var compensations = map[transition]Compensation{
-    {Created, Cancelled}:      CompNone,
-    {Paid, Cancelled}:         CompVoid,
-    {Preparing, Cancelled}:    CompVoidRestaurant,
-    {Ready, Cancelled}:        CompVoidRestaurant,
-    {Assigning, Cancelled}:    CompVoidReleaseDriverRestaurant,
-    {Assigning, FailedAssign}: CompVoid, 
-    {Assigned, Cancelled}:     CompVoidReleaseDriverRestaurant,
-    {Assigned, Assigning}:     CompNone, 
+	{Created, Cancelled}:      CompNone,
+	{Paid, Cancelled}:         CompVoid,
+	{Preparing, Cancelled}:    CompVoidRestaurant,
+	{Ready, Cancelled}:        CompVoidRestaurant,
+	{Assigning, Cancelled}:    CompVoidReleaseDriverRestaurant,
+	{Assigning, FailedAssign}: CompVoid,
+	{Assigned, Cancelled}:     CompVoidReleaseDriverRestaurant,
+	{Assigned, Assigning}:     CompNone,
 }
 
 func (order *Order) transitionTo(to Status) *InvalidTransitionError {
-	for _, status := range transitions[order.status] {
-		if status == to {
-			order.status = to
-			return nil
+	if !CanTransitionTo(order.Status(), to) {
+		return &InvalidTransitionError{From: order.status, To: to}
+	}
+
+	order.status = to
+	return nil
+}
+
+func CanTransitionTo(from, to Status) bool {
+	for _, next := range transitions[from] {
+		if next == to {
+			return true
 		}
 	}
 
-	return &InvalidTransitionError{
-		From: order.status,
-		To:   to,
-	}
+	return false
 }

@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"fdelivery_orders/internal/order"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,7 +12,7 @@ type TxManager struct {
 	pool *pgxpool.Pool
 }
 
-func (m *TxManager) WithinTx(ctx context.Context, fn func(ctx context.Context, q Querier) error) error {
+func (m *TxManager) WithinTx(ctx context.Context, fn func(ctx context.Context, q order.Querier) error) error {
 	tx, err := m.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
