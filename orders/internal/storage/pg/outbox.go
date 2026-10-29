@@ -8,6 +8,10 @@ import (
 
 type OutboxRepo struct{}
 
+func NewOutboxRepo() *OutboxRepo {
+	return &OutboxRepo{}
+}
+
 func (r *OutboxRepo) Save(ctx context.Context, q order.Querier, ev order.Event) error {
 	query := `INSERT INTO orders.outbox
 	(event_id, event_type, aggregate_id, payload, created_at)

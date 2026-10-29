@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"fdelivery_orders/internal/api"
+	"fdelivery_orders/internal/config"
 	"fdelivery_orders/internal/logger"
 	"fdelivery_orders/internal/order"
+	"fdelivery_orders/internal/storage/pg"
 	"log"
 	"log/slog"
 	"net/http"
@@ -14,30 +17,51 @@ import (
 	"time"
 )
 
-type pool struct{}
-
-func (pool) PingContext(ctx context.Context) error { return nil }
-
 // @title orders
 // @BasePath /v1
 // @securityDefinitions.apikey X-User-ID in header
 func main() {
-	var pool pool
-
 	// логгер
 	slogger, err := logger.New()
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
 	}
 
+	cfg, err := config.LoadCFG()
+	if err != nil {
+		slogger.Error("failed to load config", "error", err)
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+	pool, err := pg.NewPool(ctx, *cfg)
+	if err != nil {
+		slogger.Error("failed to create pool", "error", err)
+		os.Exit(1)
+	}
+
+	ordersRepo := pg.NewOrderRepo(pool)
+	keysRepo := pg.NewKeysRepo(pool)
+	outboxRepo := pg.NewOutboxRepo()
+	tx := pg.NewTxManager(pool)
+	pub := nopPublisher{log: slogger}
+
+	svc := order.NewService(ordersRepo, keysRepo, outboxRepo, tx, &pub, slogger)
+	h := api.NewHandler(svc, slogger)
+
 	// маршрутизация
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /v1/orders", h.Create)
+	mux.HandleFunc("GET /v1/orders/{id}", h.Get)
+	mux.HandleFunc("PATCH /v1/orders/{id}", h.Transit)
+	mux.HandleFunc("POST /v1/orders/{id}/cancel", h.Cancel)
 
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
 		defer cancel()
 
-		if err := pool.PingContext(ctx); err != nil { // потом над поменять на реальный пул!!!
+		if err := pool.Ping(ctx); err != nil {
 			w.WriteHeader(503)
 			return
 		}
@@ -81,6 +105,7 @@ func main() {
 		slogger.Error("Server stopped forcibly", "error", err)
 	}
 
+	pool.Close()
 	slogger.Info("Server stopped")
 }
 

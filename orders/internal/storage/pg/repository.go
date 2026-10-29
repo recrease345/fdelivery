@@ -19,6 +19,10 @@ type OrderRepo struct {
 	pool *pgxpool.Pool
 }
 
+func NewOrderRepo(pool *pgxpool.Pool) *OrderRepo {
+	return &OrderRepo{pool: pool}
+}
+
 func (r *OrderRepo) Save(ctx context.Context, q order.Querier, o *order.Order) error {
 	query := `
 	INSERT INTO orders.orders

@@ -12,6 +12,10 @@ type TxManager struct {
 	pool *pgxpool.Pool
 }
 
+func NewTxManager(pool *pgxpool.Pool) *TxManager {
+	return &TxManager{pool: pool}
+}
+
 func (m *TxManager) WithinTx(ctx context.Context, fn func(ctx context.Context, q order.Querier) error) error {
 	tx, err := m.pool.Begin(ctx)
 	if err != nil {

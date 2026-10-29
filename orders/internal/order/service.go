@@ -22,6 +22,23 @@ type Service struct {
 	log      *slog.Logger
 }
 
+func NewService(orders OrderRepository,
+	keys IdempotencyRepository,
+	outbox OutboxRepository,
+	txRunner TxRunner,
+	pub EventPublisher,
+	log *slog.Logger,
+) *Service {
+	return &Service{
+		orders:   orders,
+		keys:     keys,
+		outbox:   outbox,
+		txRunner: txRunner,
+		pub:      pub,
+		log:      log,
+	}
+}
+
 type CreateCommand struct {
 	UserID, RestaurantID uuid.UUID
 	Items                []Item
