@@ -33,7 +33,7 @@ func (r *IdempotencyKeysRepo) Save(ctx context.Context, q order.Querier, key str
 		var pgErr *pgconn.PgError
 
 		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
+			if pgErr.Code == "23505" && pgErr.ConstraintName == "idempotency_keys_pkey" {
 				return order.ErrDuplicateIdempotencyKey
 			}
 		}

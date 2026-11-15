@@ -49,12 +49,13 @@ func NewEvent(id uuid.UUID, eventType EventType, aggregateID uuid.UUID, payload 
 }
 
 var (
-	ErrDuplicateIdempotencyKey = errors.New("duplicete idempotency key")
-	ErrKeyNotFound             = errors.New("idempotency key not found")
-	ErrInvalidEventID          = errors.New("invalid event id")
-	ErrInvalidEventAggregateID = errors.New("invalid aggregate id")
-	ErrInvalidEventType        = errors.New("invalid event type")
-	ErrEventNotMapped          = errors.New("event not mapped")
+	ErrDuplicateIdempotencyKey  = errors.New("duplicete idempotency key")
+	ErrKeyNotFound              = errors.New("idempotency key not found")
+	ErrInvalidEventID           = errors.New("invalid event id")
+	ErrInvalidEventAggregateID  = errors.New("invalid aggregate id")
+	ErrInvalidEventType         = errors.New("invalid event type")
+	ErrEventNotMapped           = errors.New("event not mapped")
+	ErrWorkflowIsAlreadyStarted = errors.New("workflow is already started")
 )
 
 var eventsByStatus = map[Status]EventType{

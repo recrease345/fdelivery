@@ -121,7 +121,9 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*CreateResult,
 		return nil, fmt.Errorf("failed to create order tx: %w", err)
 	}
 
-	if err := s.pub.Publish(ctx, *event); err != nil {
+	pubCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second*3)
+	defer cancel()
+	if err := s.pub.Publish(pubCtx, *event); err != nil {
 		s.log.Error("failed to publish event", "eventType", event.Type, "event", event, "error", err)
 		return &CreateResult{
 			OrderID:      o.id,
