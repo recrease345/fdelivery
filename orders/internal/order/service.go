@@ -22,6 +22,23 @@ type Service struct {
 	log      *slog.Logger
 }
 
+func NewService(orders OrderRepository,
+	keys IdempotencyRepository,
+	outbox OutboxRepository,
+	txRunner TxRunner,
+	pub EventPublisher,
+	log *slog.Logger,
+) *Service {
+	return &Service{
+		orders:   orders,
+		keys:     keys,
+		outbox:   outbox,
+		txRunner: txRunner,
+		pub:      pub,
+		log:      log,
+	}
+}
+
 type CreateCommand struct {
 	UserID, RestaurantID uuid.UUID
 	Items                []Item
@@ -104,7 +121,9 @@ func (s *Service) Create(ctx context.Context, cmd CreateCommand) (*CreateResult,
 		return nil, fmt.Errorf("failed to create order tx: %w", err)
 	}
 
-	if err := s.pub.Publish(ctx, *event); err != nil {
+	pubCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second*3)
+	defer cancel()
+	if err := s.pub.Publish(pubCtx, *event); err != nil {
 		s.log.Error("failed to publish event", "eventType", event.Type, "event", event, "error", err)
 		return &CreateResult{
 			OrderID:      o.id,

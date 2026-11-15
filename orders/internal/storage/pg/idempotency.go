@@ -19,6 +19,10 @@ type IdempotencyKeysRepo struct {
 	pool *pgxpool.Pool
 }
 
+func NewKeysRepo(pool *pgxpool.Pool) *IdempotencyKeysRepo {
+	return &IdempotencyKeysRepo{pool: pool}
+}
+
 func (r *IdempotencyKeysRepo) Save(ctx context.Context, q order.Querier, key string, orderID uuid.UUID, responseBody json.RawMessage, now time.Time) error {
 	query := `
 	INSERT INTO orders.idempotency_keys (key, order_id, response_body, created_at)
@@ -29,7 +33,7 @@ func (r *IdempotencyKeysRepo) Save(ctx context.Context, q order.Querier, key str
 		var pgErr *pgconn.PgError
 
 		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
+			if pgErr.Code == "23505" && pgErr.ConstraintName == "idempotency_keys_pkey" {
 				return order.ErrDuplicateIdempotencyKey
 			}
 		}
@@ -48,7 +52,7 @@ func (r *IdempotencyKeysRepo) GetResponse(ctx context.Context, key string) (uuid
 	var responseBody json.RawMessage
 	var orderID uuid.UUID
 
-	err := r.pool.QueryRow(ctx, query, key).Scan(&responseBody, &orderID)
+	err := r.pool.QueryRow(ctx, query, key).Scan(&orderID, &responseBody)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return uuid.Nil, nil, order.ErrKeyNotFound
